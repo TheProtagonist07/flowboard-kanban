@@ -3,6 +3,16 @@ import { persist } from 'zustand/middleware';
 import { nanoid } from 'nanoid';
 import type { Board, Card, Column, FilterState, Activity } from './types';
 
+// Fire-and-forget sync to the local API (if running). Never blocks the UI.
+const API = 'http://localhost:3001';
+function syncToAPI(board: Board) {
+  fetch(`${API}/api/sync`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(board),
+  }).catch(() => { /* API not running — silent fail */ });
+}
+
 const COLORS = ['#7c3aed','#3b82f6','#10b981','#f97316','#ef4444','#ec4899','#06b6d4','#84cc16'];
 
 const DEFAULT_LABELS = [
@@ -135,24 +145,28 @@ export const useBoardStore = create<BoardStore>()(
       addCard: (columnId, title) => {
         const id = `c${nanoid(8)}`;
         const card = makeCard({ id, title, columnId });
-        set(s => ({
-          board: {
+        set(s => {
+          const board = {
             ...s.board,
             cards: { ...s.board.cards, [id]: card },
             columns: s.board.columns.map(col =>
               col.id === columnId ? { ...col, cardIds: [...col.cardIds, id] } : col
             ),
-          },
-        }));
+          };
+          syncToAPI(board);
+          return { board };
+        });
       },
 
       updateCard: (id, updates) => {
-        set(s => ({
-          board: {
+        set(s => {
+          const board = {
             ...s.board,
             cards: { ...s.board.cards, [id]: { ...s.board.cards[id], ...updates } },
-          },
-        }));
+          };
+          syncToAPI(board);
+          return { board };
+        });
       },
 
       deleteCard: (id) => {
@@ -182,17 +196,17 @@ export const useBoardStore = create<BoardStore>()(
             newToIds = [...to.cardIds];
             newToIds.splice(index, 0, cardId);
           }
-          return {
-            board: {
-              ...s.board,
-              cards: { ...s.board.cards, [cardId]: { ...s.board.cards[cardId], columnId: toCol } },
-              columns: s.board.columns.map(col => {
-                if (col.id === fromCol) return { ...col, cardIds: newFromIds };
-                if (col.id === toCol) return { ...col, cardIds: newToIds };
-                return col;
-              }),
-            },
+          const board = {
+            ...s.board,
+            cards: { ...s.board.cards, [cardId]: { ...s.board.cards[cardId], columnId: toCol } },
+            columns: s.board.columns.map(col => {
+              if (col.id === fromCol) return { ...col, cardIds: newFromIds };
+              if (col.id === toCol) return { ...col, cardIds: newToIds };
+              return col;
+            }),
           };
+          syncToAPI(board);
+          return { board };
         });
       },
 

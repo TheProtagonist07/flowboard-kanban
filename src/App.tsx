@@ -19,6 +19,15 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
+  // Push current board state to the API on mount so the Discord bot is in sync
+  useEffect(() => {
+    fetch('http://localhost:3001/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(board),
+    }).catch(() => { /* API not running — silent */ });
+  }, []);
+
   // Import board from URL on first load
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
