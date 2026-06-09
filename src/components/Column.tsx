@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Droppable, Draggable } from '@hello-pangea/dnd';
-import { Plus, MoreHorizontal, AlertTriangle, Pencil, Trash2, Settings2, Check, X } from 'lucide-react';
+import { Plus, AlertTriangle, Pencil, Trash2, Settings2, Check, X, ChevronLeft, Zap } from 'lucide-react';
 import { useBoardStore } from '../store';
 import { filterCards } from '../utils';
 import KanbanCard from './KanbanCard';
@@ -17,10 +17,12 @@ export default function Column({ column, colIndex }: Props) {
   const [showMenu, setShowMenu] = useState(false);
   const [editingWip, setEditingWip] = useState(false);
   const [wipVal, setWipVal] = useState(String(column.wipLimit ?? ''));
+  const [collapsed, setCollapsed] = useState(false);
 
   const cardIds = filterCards(board.cards, column.cardIds, filters);
   const allCardIds = column.cardIds.filter(id => !board.cards[id]?.isArchived);
   const isWipExceeded = column.wipLimit !== null && allCardIds.length > column.wipLimit;
+  const totalSP = allCardIds.reduce((sum, id) => sum + (board.cards[id]?.storyPoints || 0), 0);
 
   function handleAddCard() {
     if (newTitle.trim()) {
@@ -49,9 +51,22 @@ export default function Column({ column, colIndex }: Props) {
         <div
           ref={colProvided.innerRef}
           {...colProvided.draggableProps}
-          className={`flex-shrink-0 w-72 flex flex-col rounded-2xl transition-all duration-200 ${colSnapshot.isDragging ? 'shadow-2xl shadow-black/50 rotate-1' : ''}`}
+          className={`flex-shrink-0 flex flex-col rounded-2xl transition-all duration-200 ${colSnapshot.isDragging ? 'shadow-2xl shadow-black/50 rotate-1' : ''} ${collapsed ? 'w-12' : 'w-72'}`}
           style={{ background: 'rgba(15,23,42,0.6)', border: `1px solid ${isWipExceeded ? 'rgba(239,68,68,0.5)' : 'rgba(71,85,105,0.3)'}`, ...colProvided.draggableProps.style }}
         >
+          {/* Collapsed view */}
+          {collapsed ? (
+            <div {...colProvided.dragHandleProps}
+              className="flex-1 flex flex-col items-center py-4 gap-3 cursor-pointer select-none"
+              onClick={() => setCollapsed(false)}>
+              <div className="w-2.5 h-2.5 rounded-full" style={{ background: column.color }} />
+              <span className="text-xs font-semibold text-slate-400 writing-mode-vertical" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed', transform: 'rotate(180deg)' }}>
+                {column.title}
+              </span>
+              <span className="text-[10px] text-slate-600">{allCardIds.length}</span>
+              <ChevronLeft size={12} className="text-slate-600 rotate-180" />
+            </div>
+          ) : (<>
           {/* Column Header */}
           <div {...colProvided.dragHandleProps} className="p-3 flex items-center gap-2 flex-shrink-0 select-none">
             <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: column.color, boxShadow: `0 0 8px ${column.color}80` }} />
@@ -71,10 +86,15 @@ export default function Column({ column, colIndex }: Props) {
               {allCardIds.length}{column.wipLimit ? `/${column.wipLimit}` : ''}
             </div>
 
+            {/* Collapse */}
+            <button onClick={() => setCollapsed(true)} className="p-1 rounded hover:bg-slate-700/60 text-slate-600 hover:text-slate-300 transition-colors tooltip" data-tip="Collapse">
+              <ChevronLeft size={13} />
+            </button>
+
             {/* Menu */}
             <div className="relative">
-              <button onClick={() => setShowMenu(!showMenu)} className="p-1 rounded hover:bg-slate-700/60 text-slate-500 hover:text-slate-300 transition-colors opacity-0 group-hover:opacity-100">
-                <MoreHorizontal size={14} />
+              <button onClick={() => setShowMenu(!showMenu)} className="p-1 rounded hover:bg-slate-700/60 text-slate-500 hover:text-slate-300 transition-colors">
+                <Settings2 size={13} />
               </button>
               {showMenu && (
                 <div className="absolute right-0 top-full mt-1 w-52 glass-card shadow-xl p-1.5 z-50 animate-slide-up">
@@ -114,10 +134,15 @@ export default function Column({ column, colIndex }: Props) {
               )}
             </div>
 
-            <button onClick={() => { setShowMenu(!showMenu); }} className="p-1 rounded hover:bg-slate-700/60 text-slate-500 hover:text-slate-300 transition-colors">
-              <Settings2 size={13} />
-            </button>
           </div>
+
+          {/* Story points total */}
+          {totalSP > 0 && (
+            <div className="px-3 pb-1 flex items-center gap-1">
+              <Zap size={10} className="text-yellow-500" />
+              <span className="text-[10px] text-slate-600">{totalSP} story points</span>
+            </div>
+          )}
 
           {/* WIP warning */}
           {isWipExceeded && (
@@ -190,6 +215,7 @@ export default function Column({ column, colIndex }: Props) {
               </button>
             )}
           </div>
+          </>)}
         </div>
       )}
     </Draggable>

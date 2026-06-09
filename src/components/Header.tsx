@@ -161,6 +161,10 @@ export default function Header({ onShare, onManageTeam }: Props) {
         <Bell size={14} />
       </button>
 
+      <div className="hidden lg:flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-800/40 border border-slate-700/40 text-slate-600 text-[10px] tooltip" data-tip="Command palette">
+        <span className="font-mono">⌘K</span>
+      </div>
+
       <button onClick={onShare} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-xs font-semibold hover:from-violet-500 hover:to-indigo-500 transition-all shadow-lg shadow-violet-900/30">
         <Share2 size={13} />
         <span className="hidden sm:inline">Share</span>

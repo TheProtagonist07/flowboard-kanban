@@ -7,10 +7,12 @@ import Board from './components/Board';
 import Sidebar from './components/Sidebar';
 import CardModal from './components/CardModal';
 import ShareModal from './components/ShareModal';
+import CommandPalette from './components/CommandPalette';
 
 export default function App() {
   const { selectedCardId, importBoard, board } = useBoardStore();
   const [showShare, setShowShare] = useState(false);
+  const [showCmd, setShowCmd] = useState(false);
 
   // Import board from URL on first load
   useEffect(() => {
@@ -37,17 +39,18 @@ export default function App() {
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (e.key === 'Escape') {
-        if (selectedCardId) useBoardStore.getState().selectCard(null);
+        if (showCmd) setShowCmd(false);
+        else if (selectedCardId) useBoardStore.getState().selectCard(null);
         else if (showShare) setShowShare(false);
       }
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
-        setShowShare(true);
+        setShowCmd(c => !c);
       }
     }
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [selectedCardId, showShare]);
+  }, [selectedCardId, showShare, showCmd]);
 
   function handleManageTeam() {
     const store = useBoardStore.getState();
@@ -77,6 +80,7 @@ export default function App() {
 
       {selectedCardId && <CardModal />}
       {showShare && <ShareModal onClose={() => setShowShare(false)} />}
+      {showCmd && <CommandPalette onClose={() => setShowCmd(false)} />}
 
       <Toaster position="bottom-right" toastOptions={{
         style: { background: '#1e293b', color: '#e2e8f0', border: '1px solid rgba(71,85,105,0.4)', borderRadius: '12px', fontSize: '13px' },

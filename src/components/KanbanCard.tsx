@@ -14,7 +14,9 @@ export default function KanbanCard({ card, index }: Props) {
   const assignees = board.members.filter(m => card.assigneeIds.includes(m.id));
   const labels = board.labels.filter(l => card.labelIds.includes(l.id));
   const doneSubtasks = card.subtasks.filter(s => s.done).length;
-  const isOverdue = card.dueDate && new Date(card.dueDate) < new Date();
+  const currentCol = board.columns.find(c => c.id === card.columnId);
+  const isDoneCol = currentCol?.title.toLowerCase() === 'done';
+  const isOverdue = !isDoneCol && card.dueDate && new Date(card.dueDate) < new Date();
 
   return (
     <Draggable draggableId={card.id} index={index}>
