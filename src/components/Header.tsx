@@ -3,6 +3,7 @@ import { Search, Share2, Users, Bell, PanelRight, Zap, Filter, X } from 'lucide-
 import { useBoardStore } from '../store';
 import type { Priority } from '../types';
 import { PRIORITY_CONFIG, requestNotificationPermission } from '../utils';
+import ThemePicker from './ThemePicker';
 
 interface Props { onShare: () => void; onManageTeam: () => void; }
 
@@ -31,7 +32,7 @@ export default function Header({ onShare, onManageTeam }: Props) {
   }
 
   return (
-    <header className="glass border-b border-slate-700/50 px-4 py-3 flex items-center gap-3 flex-shrink-0 z-50">
+    <header className="glass px-4 py-3 flex items-center gap-3 flex-shrink-0 z-50" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
       {/* Logo */}
       <div className="flex items-center gap-2 flex-shrink-0">
         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-900/30">
@@ -40,7 +41,7 @@ export default function Header({ onShare, onManageTeam }: Props) {
         <span className="font-bold text-gradient text-sm tracking-wide hidden sm:block">FlowBoard</span>
       </div>
 
-      <div className="w-px h-6 bg-slate-700 flex-shrink-0" />
+      <div className="w-px h-6 flex-shrink-0" style={{ background: 'var(--border-medium)' }} />
 
       {/* Board Title */}
       <div className="flex-1 min-w-0">
@@ -55,25 +56,26 @@ export default function Header({ onShare, onManageTeam }: Props) {
           />
         ) : (
           <div className="flex items-center gap-2">
-            <button onClick={() => { setEditingTitle(true); setTitleVal(board.title); }} className="font-semibold text-slate-100 text-sm hover:text-white truncate text-left max-w-xs">
+            <button onClick={() => { setEditingTitle(true); setTitleVal(board.title); }} className="font-semibold text-sm truncate text-left max-w-xs" style={{ color: 'var(--text-1)' }}>
               {board.title}
             </button>
-            <span className="text-xs text-slate-500 hidden md:block truncate">{board.description}</span>
+            <span className="text-xs hidden md:block truncate" style={{ color: 'var(--text-3)' }}>{board.description}</span>
           </div>
         )}
       </div>
 
       {/* Search */}
       <div className="relative hidden md:flex items-center">
-        <Search size={14} className="absolute left-3 text-slate-500" />
+        <Search size={14} className="absolute left-3" style={{ color: 'var(--text-3)' }} />
         <input
           value={filters.search}
           onChange={e => setFilters({ search: e.target.value })}
           placeholder="Search cards..."
-          className="bg-slate-800/60 border border-slate-700/60 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 w-48 transition-all"
+          className="rounded-lg pl-9 pr-3 py-1.5 text-xs outline-none w-48 transition-all"
+          style={{ background: 'var(--bg-input)', border: '1px solid var(--border-input)', color: 'var(--text-1)' }}
         />
         {filters.search && (
-          <button onClick={() => setFilters({ search: '' })} className="absolute right-3 text-slate-500 hover:text-white">
+          <button onClick={() => setFilters({ search: '' })} className="absolute right-3" style={{ color: 'var(--text-3)' }}>
             <X size={12} />
           </button>
         )}
@@ -140,37 +142,39 @@ export default function Header({ onShare, onManageTeam }: Props) {
         <div className="flex -space-x-1.5 tooltip" data-tip="Manage team" onClick={onManageTeam}>
           {board.members.slice(0, 4).map(m => (
             <div key={m.id}
-              style={{ background: m.color, border: '2px solid #020617' }}
+              style={{ background: m.color, border: '2px solid var(--bg-app)' }}
               className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold cursor-pointer hover:z-10 transition-transform hover:scale-110 flex-shrink-0">
               {m.initials}
             </div>
           ))}
           {board.members.length > 4 && (
-            <div className="w-7 h-7 rounded-full bg-slate-700 border-2 border-slate-950 flex items-center justify-center text-slate-300 text-[10px] font-bold cursor-pointer">
+            <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold cursor-pointer" style={{ background: 'var(--bg-input)', border: '2px solid var(--bg-app)', color: 'var(--text-2)' }}>
               +{board.members.length - 4}
             </div>
           )}
         </div>
-        <button onClick={onManageTeam} className="ml-2 p-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-700/60 text-slate-400 hover:text-white transition-all tooltip" data-tip="Invite member">
+        <button onClick={onManageTeam} className="ml-2 p-1.5 rounded-lg transition-all tooltip" style={{ background: 'var(--bg-input)', color: 'var(--text-3)' }} data-tip="Invite member">
           <Users size={14} />
         </button>
       </div>
 
       {/* Actions */}
-      <button onClick={() => { requestNotificationPermission(); }} className="p-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-700/60 text-slate-400 hover:text-white transition-all tooltip" data-tip="Enable notifications">
+      <button onClick={() => { requestNotificationPermission(); }} className="p-1.5 rounded-lg transition-all tooltip" style={{ background: 'var(--bg-input)', color: 'var(--text-3)' }} data-tip="Enable notifications">
         <Bell size={14} />
       </button>
 
-      <div className="hidden lg:flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-800/40 border border-slate-700/40 text-slate-600 text-[10px] tooltip" data-tip="Command palette">
+      <div className="hidden lg:flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] tooltip" style={{ background: 'var(--bg-input)', border: '1px solid var(--border-subtle)', color: 'var(--text-4)' }} data-tip="Command palette">
         <span className="font-mono">⌘K</span>
       </div>
+
+      <ThemePicker />
 
       <button onClick={onShare} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-xs font-semibold hover:from-violet-500 hover:to-indigo-500 transition-all shadow-lg shadow-violet-900/30">
         <Share2 size={13} />
         <span className="hidden sm:inline">Share</span>
       </button>
 
-      <button onClick={toggleSidebar} className={`p-1.5 rounded-lg transition-all tooltip ${sidebarOpen ? 'bg-indigo-600/20 text-indigo-400' : 'bg-slate-800/60 text-slate-400 hover:text-white'}`} data-tip="Toggle sidebar">
+      <button onClick={toggleSidebar} className="p-1.5 rounded-lg transition-all tooltip" style={{ background: sidebarOpen ? 'var(--accent-bg)' : 'var(--bg-input)', color: sidebarOpen ? 'var(--accent)' : 'var(--text-3)' }} data-tip="Toggle sidebar">
         <PanelRight size={14} />
       </button>
     </header>

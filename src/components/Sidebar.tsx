@@ -18,16 +18,17 @@ export default function Sidebar() {
   if (!sidebarOpen) return null;
 
   return (
-    <aside className="w-72 flex-shrink-0 flex flex-col border-l border-slate-800/60 animate-slide-in-right"
-      style={{ background: 'rgba(9,12,24,0.95)', backdropFilter: 'blur(12px)' }}>
+    <aside className="w-72 flex-shrink-0 flex flex-col animate-slide-in-right"
+      style={{ background: 'var(--bg-sidebar)', backdropFilter: 'blur(12px)', borderLeft: '1px solid var(--border-subtle)' }}>
       {/* Tabs */}
-      <div className="flex border-b border-slate-800/60 flex-shrink-0">
+      <div className="flex flex-shrink-0" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
         {TABS.map(tab => {
           const Icon = tab.icon;
           const active = activeTab === tab.id;
           return (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 flex flex-col items-center gap-0.5 py-3 text-[10px] font-medium transition-all border-b-2 ${active ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-slate-600 hover:text-slate-400'}`}>
+              className="flex-1 flex flex-col items-center gap-0.5 py-3 text-[10px] font-medium transition-all border-b-2"
+              style={{ borderColor: active ? 'var(--accent)' : 'transparent', color: active ? 'var(--accent)' : 'var(--text-4)' }}>
               <Icon size={14} />
               {tab.label}
             </button>

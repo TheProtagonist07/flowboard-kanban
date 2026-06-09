@@ -72,6 +72,8 @@ function fmtDate(daysFromNow: number): string {
   return d.toISOString().split('T')[0];
 }
 
+export type Theme = 'midnight' | 'light' | 'contrast' | 'hacker' | 'dracula' | 'nord' | 'monokai' | 'sunset';
+
 interface BoardStore {
   board: Board;
   filters: FilterState;
@@ -79,6 +81,7 @@ interface BoardStore {
   sidebarOpen: boolean;
   focusMode: boolean;
   activeTab: 'timer' | 'analytics' | 'calendar' | 'team';
+  theme: Theme;
   // Actions
   addCard: (columnId: string, title: string) => void;
   updateCard: (id: string, updates: Partial<Card>) => void;
@@ -107,6 +110,7 @@ interface BoardStore {
   logActivity: (cardId: string, activity: Omit<Activity, 'id'>) => void;
   addLabel: (name: string, color: string) => void;
   setCurrentUser: (id: string) => void;
+  setTheme: (theme: Theme) => void;
 }
 
 const DEFAULT_FILTERS: FilterState = {
@@ -126,6 +130,7 @@ export const useBoardStore = create<BoardStore>()(
       sidebarOpen: true,
       focusMode: false,
       activeTab: 'timer',
+      theme: 'midnight' as Theme,
 
       addCard: (columnId, title) => {
         const id = `c${nanoid(8)}`;
@@ -383,6 +388,11 @@ export const useBoardStore = create<BoardStore>()(
       },
 
       setCurrentUser: (id) => set(s => ({ board: { ...s.board, currentUserId: id } })),
+
+      setTheme: (theme) => {
+        document.documentElement.setAttribute('data-theme', theme);
+        set({ theme });
+      },
     }),
     { name: 'kanban-v2' }
   )

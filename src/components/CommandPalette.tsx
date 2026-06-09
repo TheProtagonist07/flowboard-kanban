@@ -135,16 +135,16 @@ export default function CommandPalette({ onClose }: Props) {
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
       style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
       <div className="w-full max-w-xl rounded-2xl overflow-hidden shadow-2xl shadow-black/70 animate-slide-up"
-        style={{ background: '#0f172a', border: '1px solid rgba(99,102,241,0.3)' }}>
+        style={{ background: 'var(--bg-menu)', border: '1px solid var(--accent-border)' }}>
         {/* Input */}
-        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-slate-800">
-          <Search size={16} className="text-slate-500 flex-shrink-0" />
+        <div className="flex items-center gap-3 px-4 py-3.5" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+          <Search size={16} className="flex-shrink-0" style={{ color: 'var(--text-3)' }} />
           <input ref={inputRef} value={query} onChange={e => setQuery(e.target.value)}
             placeholder="Search cards, jump to column, create card..."
-            className="flex-1 bg-transparent text-sm text-white placeholder-slate-500 outline-none" />
+            className="flex-1 bg-transparent text-sm outline-none" style={{ color: 'var(--text-1)' }} />
           <div className="flex items-center gap-1.5">
-            <kbd className="text-[10px] bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded font-mono">esc</kbd>
-            <button onClick={onClose} className="text-slate-600 hover:text-slate-400"><X size={14} /></button>
+            <kbd className="text-[10px] px-1.5 py-0.5 rounded font-mono" style={{ background: 'var(--bg-input)', color: 'var(--text-3)' }}>esc</kbd>
+            <button onClick={onClose} style={{ color: 'var(--text-4)' }}><X size={14} /></button>
           </div>
         </div>
 
@@ -152,9 +152,9 @@ export default function CommandPalette({ onClose }: Props) {
         <div ref={listRef} className="overflow-y-auto" style={{ maxHeight: '420px' }}>
           {results.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Search size={24} className="text-slate-700 mb-3" />
-              <p className="text-sm text-slate-500">No results for "{query}"</p>
-              <p className="text-xs text-slate-600 mt-1">Try searching for a card title or action</p>
+              <Search size={24} className="mb-3" style={{ color: 'var(--text-4)' }} />
+              <p className="text-sm" style={{ color: 'var(--text-3)' }}>No results for "{query}"</p>
+              <p className="text-xs mt-1" style={{ color: 'var(--text-4)' }}>Try searching for a card title or action</p>
             </div>
           ) : (
             results.map((r, i) => {
@@ -164,17 +164,18 @@ export default function CommandPalette({ onClose }: Props) {
                 <div key={r.id}>
                   {showGroup && (
                     <div className="px-4 pt-3 pb-1">
-                      <span className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest">{groupLabel[r.type]}</span>
+                      <span className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'var(--text-4)' }}>{groupLabel[r.type]}</span>
                     </div>
                   )}
                   <button onClick={r.action} onMouseEnter={() => setSelected(i)}
-                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${i === selected ? 'bg-indigo-600/20' : 'hover:bg-slate-800/60'}`}>
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
+                    style={{ background: i === selected ? 'var(--accent-bg)' : 'transparent' }}>
                     <div className="flex-shrink-0 w-5 flex items-center justify-center">{r.icon}</div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-slate-200 truncate">{r.label}</p>
-                      {r.sublabel && <p className="text-[11px] text-slate-500 truncate">{r.sublabel}</p>}
+                      <p className="text-sm truncate" style={{ color: 'var(--text-1)' }}>{r.label}</p>
+                      {r.sublabel && <p className="text-[11px] truncate" style={{ color: 'var(--text-3)' }}>{r.sublabel}</p>}
                     </div>
-                    {i === selected && <ArrowRight size={13} className="text-slate-500 flex-shrink-0" />}
+                    {i === selected && <ArrowRight size={13} className="flex-shrink-0" style={{ color: 'var(--text-3)' }} />}
                   </button>
                 </div>
               );
@@ -183,10 +184,10 @@ export default function CommandPalette({ onClose }: Props) {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center gap-4 px-4 py-2.5 border-t border-slate-800 bg-slate-900/40">
-          <span className="text-[10px] text-slate-600 flex items-center gap-1"><kbd className="bg-slate-800 text-slate-500 px-1 py-0.5 rounded font-mono">↑↓</kbd> navigate</span>
-          <span className="text-[10px] text-slate-600 flex items-center gap-1"><kbd className="bg-slate-800 text-slate-500 px-1 py-0.5 rounded font-mono">↵</kbd> select</span>
-          <span className="text-[10px] text-slate-600 flex items-center gap-1"><kbd className="bg-slate-800 text-slate-500 px-1 py-0.5 rounded font-mono">esc</kbd> close</span>
+        <div className="flex items-center gap-4 px-4 py-2.5" style={{ borderTop: '1px solid var(--border-subtle)', background: 'var(--bg-input)' }}>
+          <span className="text-[10px] flex items-center gap-1" style={{ color: 'var(--text-4)' }}><kbd className="px-1 py-0.5 rounded font-mono" style={{ background: 'var(--bg-tag)', color: 'var(--text-3)' }}>↑↓</kbd> navigate</span>
+          <span className="text-[10px] flex items-center gap-1" style={{ color: 'var(--text-4)' }}><kbd className="px-1 py-0.5 rounded font-mono" style={{ background: 'var(--bg-tag)', color: 'var(--text-3)' }}>↵</kbd> select</span>
+          <span className="text-[10px] flex items-center gap-1" style={{ color: 'var(--text-4)' }}><kbd className="px-1 py-0.5 rounded font-mono" style={{ background: 'var(--bg-tag)', color: 'var(--text-3)' }}>esc</kbd> close</span>
         </div>
       </div>
     </div>

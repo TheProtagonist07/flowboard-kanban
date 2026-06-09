@@ -31,8 +31,9 @@ export default function KanbanCard({ card, index }: Props) {
           className={`group relative rounded-xl cursor-pointer transition-all duration-200 mb-2 overflow-hidden
             ${snapshot.isDragging ? 'shadow-2xl shadow-black/50 rotate-1 scale-[1.02] opacity-90' : 'hover:shadow-lg hover:shadow-black/30'}`}
           style={{
-            background: snapshot.isDragging ? 'rgba(30,41,59,0.98)' : hovered ? 'rgba(30,41,59,0.95)' : 'rgba(15,23,42,0.9)',
-            border: `1px solid ${hovered || snapshot.isDragging ? 'rgba(99,102,241,0.4)' : 'rgba(71,85,105,0.35)'}`,
+            background: hovered || snapshot.isDragging ? 'var(--bg-surface)' : 'var(--bg-card)',
+            border: `1px solid ${hovered || snapshot.isDragging ? 'var(--border-hover)' : 'var(--border-card)'}`,
+            boxShadow: 'var(--card-shadow)',
             transform: snapshot.isDragging ? provided.draggableProps.style?.transform + ' rotate(2deg)' : provided.draggableProps.style?.transform,
           }}
         >
@@ -52,7 +53,7 @@ export default function KanbanCard({ card, index }: Props) {
             )}
 
             {/* Title */}
-            <h3 className="text-sm font-medium text-slate-100 leading-snug mb-2 group-hover:text-white transition-colors">
+            <h3 className="text-sm font-medium leading-snug mb-2 transition-colors" style={{ color: 'var(--text-1)' }}>
               {card.title}
             </h3>
 
@@ -69,7 +70,7 @@ export default function KanbanCard({ card, index }: Props) {
 
                 {/* Story points */}
                 {card.storyPoints > 0 && (
-                  <span className="flex items-center gap-0.5 text-[11px] text-slate-500 bg-slate-700/40 px-1.5 py-0.5 rounded-md">
+                  <span className="flex items-center gap-0.5 text-[11px] px-1.5 py-0.5 rounded-md" style={{ color: 'var(--text-3)', background: 'var(--bg-tag)' }}>
                     <Zap size={9} className="text-yellow-500" />
                     {card.storyPoints}
                   </span>
@@ -77,7 +78,7 @@ export default function KanbanCard({ card, index }: Props) {
 
                 {/* Time */}
                 {card.timeSpent > 0 && (
-                  <span className="flex items-center gap-0.5 text-[11px] text-slate-500">
+                  <span className="flex items-center gap-0.5 text-[11px]" style={{ color: 'var(--text-3)' }}>
                     <Clock size={9} />
                     {formatMinutes(card.timeSpent)}
                   </span>
@@ -85,7 +86,7 @@ export default function KanbanCard({ card, index }: Props) {
 
                 {/* Comments */}
                 {card.comments.length > 0 && (
-                  <span className="flex items-center gap-0.5 text-[11px] text-slate-500">
+                  <span className="flex items-center gap-0.5 text-[11px]" style={{ color: 'var(--text-3)' }}>
                     <MessageSquare size={10} />
                     {card.comments.length}
                   </span>
@@ -93,7 +94,7 @@ export default function KanbanCard({ card, index }: Props) {
 
                 {/* Voice notes */}
                 {card.voiceNotes.length > 0 && (
-                  <span className="flex items-center gap-0.5 text-[11px] text-slate-500">
+                  <span className="flex items-center gap-0.5 text-[11px]" style={{ color: 'var(--text-3)' }}>
                     <Mic size={10} />
                     {card.voiceNotes.length}
                   </span>
@@ -105,13 +106,13 @@ export default function KanbanCard({ card, index }: Props) {
                 <div className="flex -space-x-1 flex-shrink-0">
                   {assignees.slice(0, 3).map(m => (
                     <div key={m.id}
-                      style={{ background: m.color, border: '1.5px solid rgba(2,6,23,0.9)' }}
+                      style={{ background: m.color, border: '1.5px solid var(--bg-app)' }}
                       className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[8px] font-bold" title={m.name}>
                       {m.initials}
                     </div>
                   ))}
                   {assignees.length > 3 && (
-                    <div className="w-5 h-5 rounded-full bg-slate-700 border-[1.5px] border-slate-950 flex items-center justify-center text-slate-300 text-[8px]">
+                    <div className="w-5 h-5 rounded-full border-[1.5px] flex items-center justify-center text-[8px]" style={{ background: 'var(--bg-input)', borderColor: 'var(--bg-app)', color: 'var(--text-2)' }}>
                       +{assignees.length - 3}
                     </div>
                   )}
@@ -129,7 +130,7 @@ export default function KanbanCard({ card, index }: Props) {
                   </span>
                   <span className="text-[10px] text-slate-500">{Math.round((doneSubtasks / card.subtasks.length) * 100)}%</span>
                 </div>
-                <div className="h-1 rounded-full bg-slate-700/60 overflow-hidden">
+                <div className="h-1 rounded-full overflow-hidden" style={{ background: 'var(--bg-tag)' }}>
                   <div
                     className="h-full rounded-full transition-all duration-500"
                     style={{ width: `${(doneSubtasks / card.subtasks.length) * 100}%`, background: cfg.color }}

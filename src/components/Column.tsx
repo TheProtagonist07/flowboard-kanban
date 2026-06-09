@@ -52,7 +52,7 @@ export default function Column({ column, colIndex }: Props) {
           ref={colProvided.innerRef}
           {...colProvided.draggableProps}
           className={`flex-shrink-0 flex flex-col rounded-2xl transition-all duration-200 ${colSnapshot.isDragging ? 'shadow-2xl shadow-black/50 rotate-1' : ''} ${collapsed ? 'w-12' : 'w-72'}`}
-          style={{ background: 'rgba(15,23,42,0.6)', border: `1px solid ${isWipExceeded ? 'rgba(239,68,68,0.5)' : 'rgba(71,85,105,0.3)'}`, ...colProvided.draggableProps.style }}
+          style={{ background: 'var(--bg-col)', border: `1px solid ${isWipExceeded ? 'rgba(239,68,68,0.5)' : 'var(--border-subtle)'}`, boxShadow: 'var(--col-shadow)', ...colProvided.draggableProps.style }}
         >
           {/* Collapsed view */}
           {collapsed ? (
@@ -60,10 +60,10 @@ export default function Column({ column, colIndex }: Props) {
               className="flex-1 flex flex-col items-center py-4 gap-3 cursor-pointer select-none"
               onClick={() => setCollapsed(false)}>
               <div className="w-2.5 h-2.5 rounded-full" style={{ background: column.color }} />
-              <span className="text-xs font-semibold text-slate-400 writing-mode-vertical" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed', transform: 'rotate(180deg)' }}>
+              <span className="text-xs font-semibold writing-mode-vertical" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed', transform: 'rotate(180deg)', color: 'var(--text-2)' }}>
                 {column.title}
               </span>
-              <span className="text-[10px] text-slate-600">{allCardIds.length}</span>
+              <span className="text-[10px]" style={{ color: 'var(--text-4)' }}>{allCardIds.length}</span>
               <ChevronLeft size={12} className="text-slate-600 rotate-180" />
             </div>
           ) : (<>
@@ -77,11 +77,11 @@ export default function Column({ column, colIndex }: Props) {
                 className="flex-1 bg-slate-700 rounded px-2 py-0.5 text-sm font-semibold text-white outline-none border border-indigo-500"
               />
             ) : (
-              <span className="flex-1 text-sm font-semibold text-slate-100 truncate">{column.title}</span>
+              <span className="flex-1 text-sm font-semibold truncate" style={{ color: 'var(--text-1)' }}>{column.title}</span>
             )}
 
             {/* Card count / WIP */}
-            <div className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${isWipExceeded ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-slate-700/60 text-slate-400'}`}>
+            <div className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${isWipExceeded ? 'bg-red-500/20 text-red-400 border border-red-500/30' : ''}`} style={!isWipExceeded ? { background: 'var(--bg-input)', color: 'var(--text-3)' } : {}}>
               {isWipExceeded && <AlertTriangle size={10} />}
               {allCardIds.length}{column.wipLimit ? `/${column.wipLimit}` : ''}
             </div>

@@ -10,9 +10,14 @@ import ShareModal from './components/ShareModal';
 import CommandPalette from './components/CommandPalette';
 
 export default function App() {
-  const { selectedCardId, importBoard, board } = useBoardStore();
+  const { selectedCardId, importBoard, board, theme } = useBoardStore();
   const [showShare, setShowShare] = useState(false);
   const [showCmd, setShowCmd] = useState(false);
+
+  // Apply persisted theme on mount
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 
   // Import board from URL on first load
   useEffect(() => {
@@ -60,13 +65,13 @@ export default function App() {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden"
-      style={{ background: 'linear-gradient(135deg, #020617 0%, #0f172a 50%, #020617 100%)' }}>
+      style={{ background: 'linear-gradient(135deg, var(--gradient-a) 0%, var(--gradient-b) 50%, var(--gradient-a) 100%)' }}>
       {/* Ambient glow */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] rounded-full opacity-[0.04]"
-          style={{ background: 'radial-gradient(circle, #818cf8, transparent)', transform: 'translate(-50%,-50%)' }} />
-        <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] rounded-full opacity-[0.04]"
-          style={{ background: 'radial-gradient(circle, #c084fc, transparent)', transform: 'translate(50%,50%)' }} />
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] rounded-full"
+          style={{ background: 'radial-gradient(circle, var(--glow-a), transparent)', transform: 'translate(-50%,-50%)' }} />
+        <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] rounded-full"
+          style={{ background: 'radial-gradient(circle, var(--glow-b), transparent)', transform: 'translate(50%,50%)' }} />
       </div>
 
       <Header onShare={() => setShowShare(true)} onManageTeam={handleManageTeam} />
@@ -83,9 +88,9 @@ export default function App() {
       {showCmd && <CommandPalette onClose={() => setShowCmd(false)} />}
 
       <Toaster position="bottom-right" toastOptions={{
-        style: { background: '#1e293b', color: '#e2e8f0', border: '1px solid rgba(71,85,105,0.4)', borderRadius: '12px', fontSize: '13px' },
-        success: { iconTheme: { primary: '#818cf8', secondary: '#0f172a' } },
-        error:   { iconTheme: { primary: '#ef4444', secondary: '#0f172a' } },
+        style: { background: 'var(--bg-modal)', color: 'var(--text-1)', border: '1px solid var(--border-medium)', borderRadius: '12px', fontSize: '13px' },
+        success: { iconTheme: { primary: 'var(--accent)', secondary: 'var(--bg-modal)' } },
+        error:   { iconTheme: { primary: '#ef4444', secondary: 'var(--bg-modal)' } },
       }} />
     </div>
   );
