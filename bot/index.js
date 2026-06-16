@@ -3,12 +3,16 @@ const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
 
 const TOKEN   = process.env.DISCORD_TOKEN;
 const API_URL = process.env.API_URL || 'http://localhost:3001';
+const API_KEY = process.env.API_KEY; // must match the API's API_KEY if set
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 async function api(path, opts = {}) {
   const res = await fetch(`${API_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(API_KEY ? { 'x-api-key': API_KEY } : {}),
+    },
     ...opts,
     body: opts.body ? JSON.stringify(opts.body) : undefined,
   });
