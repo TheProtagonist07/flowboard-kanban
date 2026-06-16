@@ -4,6 +4,7 @@ import { useBoardStore } from '../store';
 import type { Priority } from '../types';
 import { PRIORITY_CONFIG, requestNotificationPermission } from '../utils';
 import ThemePicker from './ThemePicker';
+import { BoardSwitcher, CloudMenu } from './CloudUI';
 
 interface Props { onShare: () => void; onManageTeam: () => void; }
 
@@ -42,6 +43,9 @@ export default function Header({ onShare, onManageTeam }: Props) {
       </div>
 
       <div className="w-px h-6 flex-shrink-0" style={{ background: 'var(--border-medium)' }} />
+
+      {/* Board switcher (cloud mode only) */}
+      <BoardSwitcher />
 
       {/* Board Title */}
       <div className="flex-1 min-w-0">
@@ -177,6 +181,9 @@ export default function Header({ onShare, onManageTeam }: Props) {
       <button onClick={toggleSidebar} className="p-1.5 rounded-lg transition-all tooltip" style={{ background: sidebarOpen ? 'var(--accent-bg)' : 'var(--bg-input)', color: sidebarOpen ? 'var(--accent)' : 'var(--text-3)' }} data-tip="Toggle sidebar">
         <PanelRight size={14} />
       </button>
+
+      {/* Account menu (cloud mode only) */}
+      <CloudMenu />
     </header>
   );
 }
