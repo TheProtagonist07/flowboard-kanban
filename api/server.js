@@ -3,24 +3,69 @@ const express = require('express');
 const cors    = require('cors');
 const fs      = require('fs');
 const path    = require('path');
-const { nanoid } = require ? (() => { try { return require('nanoid'); } catch { return { nanoid: () => Math.random().toString(36).slice(2, 10) }; } })() : { nanoid: () => Math.random().toString(36).slice(2, 10) };
+const { createClient } = require('@supabase/supabase-js');
 
 const app      = express();
 const DATA     = path.join(__dirname, 'board.json');
 const PORT     = process.env.PORT || 3001;
 const WEBHOOK  = process.env.DISCORD_WEBHOOK_URL;
+const API_KEY  = process.env.API_KEY; // if set, required on every /api call
+
+// ── Storage backend ──────────────────────────────────────────────────────────
+// CLOUD: read/write a single board's JSONB document in Supabase (shared with the
+//        web app, so the Discord bot and the browser stay in sync via realtime).
+// LOCAL: fall back to a board.json file (the original behaviour).
+const SB_URL   = process.env.SUPABASE_URL;
+const SB_KEY   = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const BOARD_ID = process.env.BOARD_ID;
+const supa  = (SB_URL && SB_KEY) ? createClient(SB_URL, SB_KEY, { auth: { persistSession: false } }) : null;
+const CLOUD = Boolean(supa && BOARD_ID);
 
 app.use(cors());
 app.use(express.json({ limit: '5mb' }));
 
+// Optional API-key gate (skips the health check).
+app.use('/api', (req, res, next) => {
+  if (!API_KEY || req.path === '/health') return next();
+  if (req.get('x-api-key') === API_KEY) return next();
+  res.status(401).json({ error: 'Invalid or missing x-api-key' });
+});
+
 // ── helpers ─────────────────────────────────────────────────────────────────
 
-function loadBoard() {
+function initialsOf(name) {
+  return (name || '').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || '??';
+}
+
+async function loadBoard() {
+  if (CLOUD) {
+    const { data: row, error } = await supa
+      .from('boards').select('workspace_id, title, description, data').eq('id', BOARD_ID).single();
+    if (error || !row) return null;
+    const board = { ...(row.data || {}), id: BOARD_ID, title: row.title, description: row.description };
+    const { data: mem } = await supa
+      .from('workspace_members')
+      .select('user_id, role, profiles ( display_name, email, avatar_color )')
+      .eq('workspace_id', row.workspace_id);
+    board.members = (mem || []).map(m => {
+      const name = m.profiles?.display_name || m.profiles?.email?.split('@')[0] || 'User';
+      return { id: m.user_id, name, initials: initialsOf(name), color: m.profiles?.avatar_color || '#6366f1', role: m.role };
+    });
+    if (!board.columns) board.columns = [];
+    if (!board.cards) board.cards = {};
+    if (!board.labels) board.labels = [];
+    return board;
+  }
   if (!fs.existsSync(DATA)) return null;
   try { return JSON.parse(fs.readFileSync(DATA, 'utf8')); } catch { return null; }
 }
 
-function saveBoard(board) {
+async function saveBoard(board) {
+  if (CLOUD) {
+    const { members, currentUserId, id, ...data } = board;
+    await supa.from('boards').update({ data, title: board.title, description: board.description }).eq('id', BOARD_ID);
+    return;
+  }
   fs.writeFileSync(DATA, JSON.stringify(board, null, 2));
 }
 
@@ -44,43 +89,41 @@ function cardEmbed(card, board, title, color) {
   const col      = board.columns.find(c => c.cardIds.includes(card.id));
   const assignees = (card.assigneeIds || []).map(id => board.members.find(m => m.id === id)?.name).filter(Boolean);
   const labels    = (card.labelIds  || []).map(id => board.labels.find(l => l.id === id)?.name).filter(Boolean);
-  const done      = card.subtasks.filter(s => s.done).length;
+  const done      = (card.subtasks || []).filter(s => s.done).length;
   const fields    = [
     { name: '📂 Column',   value: col?.title    || '—',          inline: true },
     { name: '⚡ Priority', value: `${PRIORITY_ICON[card.priority]} ${card.priority}`, inline: true },
     { name: '👤 Assigned', value: assignees.join(', ') || 'Unassigned', inline: true },
   ];
-  if (card.dueDate)          fields.push({ name: '📅 Due',      value: card.dueDate, inline: true });
-  if (card.storyPoints)      fields.push({ name: '⭐ Points',   value: String(card.storyPoints), inline: true });
-  if (card.subtasks.length)  fields.push({ name: '✅ Subtasks', value: `${done}/${card.subtasks.length}`, inline: true });
-  if (labels.length)         fields.push({ name: '🏷️ Labels',  value: labels.join(', '), inline: false });
-  if (card.description)      fields.push({ name: '📝 Notes',   value: card.description.slice(0, 200), inline: false });
+  if (card.dueDate)               fields.push({ name: '📅 Due',      value: card.dueDate, inline: true });
+  if (card.storyPoints)           fields.push({ name: '⭐ Points',   value: String(card.storyPoints), inline: true });
+  if ((card.subtasks||[]).length) fields.push({ name: '✅ Subtasks', value: `${done}/${card.subtasks.length}`, inline: true });
+  if (labels.length)              fields.push({ name: '🏷️ Labels',  value: labels.join(', '), inline: false });
+  if (card.description)           fields.push({ name: '📝 Notes',   value: card.description.slice(0, 200), inline: false });
   return { title, description: `**${card.title}**`, color: color ?? PRIORITY_COLOR[card.priority] ?? 0x6366f1, fields, timestamp: new Date().toISOString(), footer: { text: 'FlowBoard' } };
 }
 
 // ── routes ───────────────────────────────────────────────────────────────────
 
-// Health check
-app.get('/api/health', (_, res) => res.json({ ok: true, version: '1.0.0' }));
+app.get('/api/health', (_, res) => res.json({ ok: true, version: '1.1.0', backend: CLOUD ? 'supabase' : 'file' }));
 
-// Full board
-app.get('/api/board', (_, res) => {
-  const board = loadBoard();
+app.get('/api/board', async (_, res) => {
+  const board = await loadBoard();
   if (!board) return res.status(404).json({ error: 'Board not synced yet. Open FlowBoard in your browser first.' });
   res.json(board);
 });
 
-// Sync full board state from the frontend (fire-and-forget POST)
-app.post('/api/sync', (req, res) => {
+// Sync full board state from the frontend (used in local mode).
+app.post('/api/sync', async (req, res) => {
   if (!req.body || !req.body.columns) return res.status(400).json({ error: 'Invalid board payload' });
-  saveBoard(req.body);
+  await saveBoard(req.body);
   res.json({ ok: true });
 });
 
 // ── columns ──────────────────────────────────────────────────────────────────
 
-app.get('/api/columns', (_, res) => {
-  const board = loadBoard();
+app.get('/api/columns', async (_, res) => {
+  const board = await loadBoard();
   if (!board) return res.status(404).json({ error: 'No board data' });
   res.json(board.columns.map(col => ({
     ...col,
@@ -90,8 +133,8 @@ app.get('/api/columns', (_, res) => {
 
 // ── cards ─────────────────────────────────────────────────────────────────────
 
-app.get('/api/cards', (req, res) => {
-  const board = loadBoard();
+app.get('/api/cards', async (req, res) => {
+  const board = await loadBoard();
   if (!board) return res.status(404).json({ error: 'No board data' });
   let cards = Object.values(board.cards).filter(c => !c.isArchived);
   if (req.query.column) {
@@ -106,8 +149,8 @@ app.get('/api/cards', (req, res) => {
   res.json(cards);
 });
 
-app.get('/api/cards/:id', (req, res) => {
-  const board = loadBoard();
+app.get('/api/cards/:id', async (req, res) => {
+  const board = await loadBoard();
   if (!board) return res.status(404).json({ error: 'No board data' });
   const card = board.cards[req.params.id];
   if (!card) return res.status(404).json({ error: 'Card not found' });
@@ -115,7 +158,7 @@ app.get('/api/cards/:id', (req, res) => {
 });
 
 app.post('/api/cards', async (req, res) => {
-  const board = loadBoard();
+  const board = await loadBoard();
   if (!board) return res.status(404).json({ error: 'No board data. Open FlowBoard first.' });
 
   const { title, columnId, priority = 'medium', description = '', dueDate = null, storyPoints = 0 } = req.body;
@@ -134,14 +177,14 @@ app.post('/api/cards', async (req, res) => {
 
   board.cards[id] = card;
   col.cardIds.push(id);
-  saveBoard(board);
+  await saveBoard(board);
 
   await discordNotify([cardEmbed(card, board, '📋 New Card Created', 0x6366f1)]);
   res.status(201).json(card);
 });
 
 app.patch('/api/cards/:id', async (req, res) => {
-  const board = loadBoard();
+  const board = await loadBoard();
   if (!board) return res.status(404).json({ error: 'No board data' });
   const card = board.cards[req.params.id];
   if (!card) return res.status(404).json({ error: 'Card not found' });
@@ -149,9 +192,15 @@ app.patch('/api/cards/:id', async (req, res) => {
   const prevColId = card.columnId;
   Object.assign(card, req.body);
   board.cards[req.params.id] = card;
-  saveBoard(board);
 
-  // Notify if column changed
+  // Keep column membership consistent if columnId changed via PATCH.
+  if (req.body.columnId && req.body.columnId !== prevColId) {
+    board.columns.forEach(c => { c.cardIds = c.cardIds.filter(cid => cid !== card.id); });
+    const target = board.columns.find(c => c.id === req.body.columnId);
+    if (target && !target.cardIds.includes(card.id)) target.cardIds.push(card.id);
+  }
+  await saveBoard(board);
+
   if (req.body.columnId && req.body.columnId !== prevColId) {
     const newCol  = board.columns.find(c => c.id === req.body.columnId);
     const oldCol  = board.columns.find(c => c.id === prevColId);
@@ -172,19 +221,19 @@ app.patch('/api/cards/:id', async (req, res) => {
   res.json(card);
 });
 
-app.delete('/api/cards/:id', (req, res) => {
-  const board = loadBoard();
+app.delete('/api/cards/:id', async (req, res) => {
+  const board = await loadBoard();
   if (!board) return res.status(404).json({ error: 'No board data' });
   if (!board.cards[req.params.id]) return res.status(404).json({ error: 'Card not found' });
   delete board.cards[req.params.id];
   board.columns.forEach(col => { col.cardIds = col.cardIds.filter(id => id !== req.params.id); });
-  saveBoard(board);
+  await saveBoard(board);
   res.json({ ok: true });
 });
 
 // Move a card to a different column
 app.post('/api/cards/:id/move', async (req, res) => {
-  const board = loadBoard();
+  const board = await loadBoard();
   if (!board) return res.status(404).json({ error: 'No board data' });
   const card = board.cards[req.params.id];
   if (!card) return res.status(404).json({ error: 'Card not found' });
@@ -198,7 +247,7 @@ app.post('/api/cards/:id/move', async (req, res) => {
   if (oldCol) oldCol.cardIds = oldCol.cardIds.filter(id => id !== req.params.id);
   if (!newCol.cardIds.includes(req.params.id)) newCol.cardIds.push(req.params.id);
   card.columnId = newCol.id;
-  saveBoard(board);
+  await saveBoard(board);
 
   const isDone = newCol.title.toLowerCase() === 'done';
   await discordNotify([{
@@ -218,8 +267,8 @@ app.post('/api/cards/:id/move', async (req, res) => {
 
 // ── members ──────────────────────────────────────────────────────────────────
 
-app.get('/api/members', (_, res) => {
-  const board = loadBoard();
+app.get('/api/members', async (_, res) => {
+  const board = await loadBoard();
   if (!board) return res.status(404).json({ error: 'No board data' });
   const members = board.members.map(m => {
     const assigned = Object.values(board.cards).filter(c => !c.isArchived && c.assigneeIds.includes(m.id));
@@ -230,8 +279,8 @@ app.get('/api/members', (_, res) => {
 
 // ── stats ─────────────────────────────────────────────────────────────────────
 
-app.get('/api/stats', (_, res) => {
-  const board = loadBoard();
+app.get('/api/stats', async (_, res) => {
+  const board = await loadBoard();
   if (!board) return res.status(404).json({ error: 'No board data' });
   const active = Object.values(board.cards).filter(c => !c.isArchived);
   const now = new Date(); now.setHours(0,0,0,0);
@@ -254,12 +303,11 @@ app.get('/api/stats', (_, res) => {
 
 app.listen(PORT, () => {
   console.log(`\n🚀 FlowBoard API  →  http://localhost:${PORT}`);
+  console.log(`   Storage backend: ${CLOUD ? 'Supabase (board ' + BOARD_ID + ')' : 'local board.json'}`);
+  console.log(`   API key auth:    ${API_KEY ? 'on' : 'off'}`);
   console.log(`   GET  /api/board          Full board state`);
-  console.log(`   GET  /api/columns        All columns`);
   console.log(`   GET  /api/cards          All cards  (?column= ?priority= ?overdue=true)`);
   console.log(`   POST /api/cards          Create card`);
-  console.log(`   PATCH /api/cards/:id     Update card`);
   console.log(`   POST /api/cards/:id/move Move card to column`);
-  console.log(`   GET  /api/stats          Board analytics`);
-  console.log(`   POST /api/sync           Sync full board from frontend\n`);
+  console.log(`   GET  /api/stats          Board analytics\n`);
 });

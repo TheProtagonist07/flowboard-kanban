@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { nanoid } from 'nanoid';
 import type { Board, Card, Column, FilterState, Activity } from './types';
+import { CLOUD } from './lib/supabase';
+import { saveBoardDebounced } from './lib/cloud';
 
 // Fire-and-forget sync to the local API (if running). Never blocks the UI.
 const API = 'http://localhost:3001';
@@ -11,6 +13,21 @@ function syncToAPI(board: Board) {
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify(board),
   }).catch(() => { /* API not running — silent fail */ });
+}
+
+// True while we are applying a board pushed from another client over realtime,
+// so the persistence subscriber below doesn't echo it straight back to the DB.
+let applyingRemote = false;
+
+// Single source of persistence. In CLOUD mode every board mutation is debounced
+// to Supabase; in LOCAL mode it goes to the optional local Express API (and the
+// zustand `persist` middleware handles localStorage).
+function persistBoard(board: Board, cloudBoardId: string | null) {
+  if (CLOUD) {
+    if (cloudBoardId) saveBoardDebounced(cloudBoardId, board);
+  } else {
+    syncToAPI(board);
+  }
 }
 
 const COLORS = ['#7c3aed','#3b82f6','#10b981','#f97316','#ef4444','#ec4899','#06b6d4','#84cc16'];
@@ -92,6 +109,13 @@ interface BoardStore {
   focusMode: boolean;
   activeTab: 'timer' | 'analytics' | 'calendar' | 'team';
   theme: Theme;
+  // Cloud mode
+  cloudBoardId: string | null;
+  cloudWorkspaceId: string | null;
+  cloudReady: boolean;
+  selectCloudBoard: (boardId: string) => void;
+  applyLoadedBoard: (workspaceId: string, board: Board) => void;
+  applyRemoteBoard: (board: Board) => void;
   // Actions
   addCard: (columnId: string, title: string) => void;
   updateCard: (id: string, updates: Partial<Card>) => void;
@@ -142,31 +166,49 @@ export const useBoardStore = create<BoardStore>()(
       activeTab: 'timer',
       theme: 'midnight' as Theme,
 
+      cloudBoardId: null,
+      cloudWorkspaceId: null,
+      cloudReady: false,
+
+      // Point the app at a board (used by bootstrap + the board switcher). The
+      // load effect in App watches cloudBoardId and fetches + subscribes.
+      selectCloudBoard: (boardId) => set({ cloudBoardId: boardId, cloudReady: false }),
+
+      // Apply a freshly fetched board (initial load or after switching boards).
+      applyLoadedBoard: (workspaceId, board) => {
+        applyingRemote = true;
+        set({ board, cloudWorkspaceId: workspaceId, cloudReady: true, selectedCardId: null });
+        applyingRemote = false;
+      },
+
+      // Apply an incremental update pushed from another client via realtime.
+      applyRemoteBoard: (board) => {
+        applyingRemote = true;
+        set({ board });
+        applyingRemote = false;
+      },
+
       addCard: (columnId, title) => {
         const id = `c${nanoid(8)}`;
         const card = makeCard({ id, title, columnId });
-        set(s => {
-          const board = {
+        set(s => ({
+          board: {
             ...s.board,
             cards: { ...s.board.cards, [id]: card },
             columns: s.board.columns.map(col =>
               col.id === columnId ? { ...col, cardIds: [...col.cardIds, id] } : col
             ),
-          };
-          syncToAPI(board);
-          return { board };
-        });
+          },
+        }));
       },
 
       updateCard: (id, updates) => {
-        set(s => {
-          const board = {
+        set(s => ({
+          board: {
             ...s.board,
             cards: { ...s.board.cards, [id]: { ...s.board.cards[id], ...updates } },
-          };
-          syncToAPI(board);
-          return { board };
-        });
+          },
+        }));
       },
 
       deleteCard: (id) => {
@@ -205,7 +247,6 @@ export const useBoardStore = create<BoardStore>()(
               return col;
             }),
           };
-          syncToAPI(board);
           return { board };
         });
       },
@@ -408,6 +449,23 @@ export const useBoardStore = create<BoardStore>()(
         set({ theme });
       },
     }),
-    { name: 'kanban-v2' }
+    {
+      name: 'kanban-v2',
+      // In cloud mode the board comes from Supabase, so only the UI preferences
+      // are cached locally. In local mode we persist the whole board as before.
+      partialize: (state) =>
+        CLOUD
+          ? { theme: state.theme, sidebarOpen: state.sidebarOpen, activeTab: state.activeTab }
+          : state,
+    }
   )
 );
+
+// Auto-persist every board mutation through the single persistence path.
+// Skips writes that originate from a remote (realtime) update to avoid echoes.
+useBoardStore.subscribe((state, prev) => {
+  if (applyingRemote) return;
+  if (state.board !== prev.board) {
+    persistBoard(state.board, state.cloudBoardId);
+  }
+});
