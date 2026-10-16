@@ -1,0 +1,9 @@
+node_modules
+dist
+build
+api
+bot
+supabase
+public
+screenshots
+package-lock.json

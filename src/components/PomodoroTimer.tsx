@@ -65,7 +65,9 @@ export default function PomodoroTimer() {
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
       osc.start();
       osc.stop(ctx.currentTime + 0.8);
-    } catch {}
+    } catch {
+      // intentionally ignored: the sound is optional
+    }
   }
 
   function switchMode(m: Mode) {
