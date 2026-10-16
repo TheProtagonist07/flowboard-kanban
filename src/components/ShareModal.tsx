@@ -44,7 +44,9 @@ export default function ShareModal({ onClose }: Props) {
         onClose();
         return;
       }
-    } catch {}
+    } catch {
+      // intentionally ignored
+    }
 
     // Try encoded URL
     const urlMatch = importText.match(/[?&]board=([^&\s]+)/);

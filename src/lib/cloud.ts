@@ -182,7 +182,7 @@ export async function bootstrap(): Promise<{ workspaceId: string; boardId: strin
   }
 
   const ws = workspaces[0];
-  let boards = await listBoards(ws.id);
+  const boards = await listBoards(ws.id);
   if (boards.length === 0) {
     const boardId = await createBoard(ws.id, 'Product Roadmap');
     return { workspaceId: ws.id, boardId };
