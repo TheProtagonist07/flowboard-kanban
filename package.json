@@ -20,7 +20,7 @@
     "date-fns": "^4.4.0",
     "framer-motion": "^12.40.0",
     "lucide-react": "^1.56.0",
-    "nanoid": "^5.1.16",
+    "nanoid": "^6.0.2",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-hot-toast": "^2.6.1",
