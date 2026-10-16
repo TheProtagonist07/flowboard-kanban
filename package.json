@@ -9,7 +9,10 @@
     "dev:all": "concurrently --names \"UI,API\" --prefix-colors \"cyan,yellow\" \"vite\" \"npm --prefix api run dev\"",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",
@@ -32,10 +35,12 @@
     "autoprefixer": "^10.5.0",
     "concurrently": "^10.0.3",
     "eslint": "^10.3.0",
+    "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.6.0",
     "postcss": "^8.5.15",
+    "prettier": "^3.9.10",
     "tailwindcss": "^3.4.19",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.59.2",
