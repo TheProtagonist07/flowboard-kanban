@@ -18,7 +18,7 @@
     "@hello-pangea/dnd": "^18.0.1",
     "@supabase/supabase-js": "^2.117.3",
     "date-fns": "^4.4.0",
-    "framer-motion": "^12.40.0",
+    "framer-motion": "^14.3.0",
     "lucide-react": "^1.56.0",
     "nanoid": "^5.1.16",
     "react": "^19.3.0",
